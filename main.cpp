@@ -24,20 +24,20 @@ uint64_t ptr_loc;
 std::stack<uint64_t> goto_stack;
 
 enum state {
+	NO_INPUT,
 	ARG_INPUT,
-	FILE_INPUT,
-	INTERACTIVE
+	FILE_INPUT
 };
 
 void usage(int e);
-int run_file(char* filepath);
 int execute(std::istream& code, uint64_t mem_size);
 int verify(std::istream& code);
 int jump_ff(std::istream& code);
 
 int main(int argc, char** argv) {
 	uint64_t mem_size = MEM_DEFAULT;
-	enum state st = state::ARG_INPUT;
+	enum state st = state::NO_INPUT;
+	int interactive = 0;
 	char* filepath;
 	char* arg_input;
 
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 				mem_size = atoi(optarg);
 				break;
 			case 'i':
-				st = state::INTERACTIVE;
+				interactive = 1;
 				break;
 			case '?':
 				usage(1);
@@ -64,10 +64,11 @@ int main(int argc, char** argv) {
 	}
 
 	if (optind < argc) {
+		st = state::ARG_INPUT;
 		arg_input = argv[optind];
 	} else {
-		if (st != state::FILE_INPUT) {
-			st = state::INTERACTIVE;
+		if (st == state::NO_INPUT) {
+			interactive = 1;
 		}
 	}
 
@@ -77,9 +78,15 @@ int main(int argc, char** argv) {
 
 	// run code
 	if (st == state::ARG_INPUT) {
-		// std::cout << arg_input << std::endl;
-		std::istringstream code(arg_input);
-		execute(code, mem_size);
+		std::istringstream bf_code(arg_input);
+		execute(bf_code, mem_size);
+	}
+	if (st == state::FILE_INPUT) {
+		std::ifstream bf_code(filepath);
+		execute(bf_code, mem_size);
+	}
+	if (interactive) {
+		std::cout << "TODO: Interactive" << std::endl;
 	}
 
 	// exit
@@ -90,10 +97,6 @@ int main(int argc, char** argv) {
 void usage(int e) {
 	std::cout << "usage: " << std::endl;
 	exit(e);
-}
-
-int run_file(char* filepath) {
-	return 0;
 }
 
 int execute(std::istream& code, uint64_t mem_size) {
@@ -108,7 +111,7 @@ int execute(std::istream& code, uint64_t mem_size) {
 	char cmd;
 	while (code >> cmd) {
 		uint8_t* cell = memory + ptr_loc;
-		// std::cout << cmd << std::endl;
+		// std::cout << cmd;
 		switch (cmd) {
 			case PTR_INC:
 				ptr_loc++;
