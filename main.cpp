@@ -83,7 +83,6 @@ int main(int argc, char** argv) {
 	}
 
 	// exit
-	std::cout << std::endl;
 	std::free(memory);
 	return 0;
 }
@@ -109,6 +108,7 @@ int execute(std::istream& code, uint64_t mem_size) {
 	char cmd;
 	while (code >> cmd) {
 		uint8_t* cell = memory + ptr_loc;
+		// std::cout << cmd << std::endl;
 		switch (cmd) {
 			case PTR_INC:
 				ptr_loc++;
@@ -123,10 +123,10 @@ int execute(std::istream& code, uint64_t mem_size) {
 				ptr_loc--;
 				break;
 			case MEM_INC:
-				*cell++;
+				(*cell)++;
 				break;
 			case MEM_DEC:
-				*cell--;
+				(*cell)--;
 				break;
 			case PUT_CHR:
 				putchar(*cell);
@@ -136,7 +136,7 @@ int execute(std::istream& code, uint64_t mem_size) {
 				break;
 			case JMP_FWD:
 				if (*cell != 0) {
-					goto_stack.push((uint64_t)code.tellg() + 1);
+					goto_stack.push(code.tellg());
 				} else {
 					jump_ff(code);
 				}
