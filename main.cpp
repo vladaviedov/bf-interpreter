@@ -2,7 +2,7 @@
  * @file main.cpp
  * @author Vladyslav Aviedov (vladaviedov@protonmail.com)
  * @brief Interpreter for the Brainfuck esoteric language written in C++.
- * @version 0.1
+ * @version 0.2
  * @date 2022-02-11
  * 
  * @copyright Copyright (c) 2022
@@ -18,9 +18,12 @@
 #include <sstream>
 #include <getopt.h>
 
+#define VERSION 0.2
 #define MEM_DEFAULT 256
+
 #define SHELL_PS1 "bf> "
-#define WINDOW_SIZE 5
+#define SHELL_CMD_PREFIX '$'
+#define SHELL_WINDOW_SIZE 5
 
 // brainfuck commands
 #define PTR_INC '>'
@@ -34,7 +37,10 @@
 
 uint8_t* memory;
 uint64_t ptr_loc;
+uint64_t mem_size;
 std::stack<uint64_t> goto_stack;
+
+int newline;
 
 enum state {
 	NO_INPUT,
@@ -43,24 +49,30 @@ enum state {
 };
 
 void usage(int e);
-int execute(std::istream& code, uint64_t mem_size);
+int execute(std::istream& code);
 int verify(std::istream& code);
+uint64_t ptr_offset(int offset);
 int jump_ff(std::istream& code);
-void shell(uint64_t mem_size);
+void shell();
+int shell_cmd(std::string input);
 
 int main(int argc, char** argv) {
-	uint64_t mem_size = MEM_DEFAULT;
+	mem_size = MEM_DEFAULT;
 	enum state st = state::NO_INPUT;
 	int interactive = 0;
-	int newline = 0;
+	newline = 0;
 	char* filepath;
 	char* arg_input;
 
 	char opt;
-	while ((opt = getopt(argc, argv, "hf:m:in")) != -1) {
+	while ((opt = getopt(argc, argv, "hvf:m:in")) != -1) {
 		switch (opt) {
 			case 'h':
 				usage(0);
+				break;
+			case 'v':
+				std::cout << "bfi " << VERSION << std::endl;
+				exit(0);
 				break;
 			case 'f':
 				filepath = optarg;
@@ -104,16 +116,16 @@ int main(int argc, char** argv) {
 	// run code
 	if (st == state::ARG_INPUT) {
 		std::istringstream bf_code(arg_input);
-		execute(bf_code, mem_size);
+		execute(bf_code);
 		if (newline) std::cout << std::endl;
 	}
 	if (st == state::FILE_INPUT) {
 		std::ifstream bf_code(filepath);
-		execute(bf_code, mem_size);
+		execute(bf_code);
 		if (newline) std::cout << std::endl;
 	}
 	if (interactive) {
-		shell(mem_size);
+		shell();
 	}
 
 	// exit
@@ -143,10 +155,9 @@ void usage(int e) {
  * @brief Executes a block of brainfuck code.
  * 
  * @param code code stream
- * @param mem_size size of memory in bytes
  * @return 0 on success or -1 if code is invalid
  */
-int execute(std::istream& code, uint64_t mem_size) {
+int execute(std::istream& code) {
 	if (verify(code) < 0) {
 		std::cerr << "Inputted code is invalid" << std::endl;
 		return -1;
@@ -161,16 +172,10 @@ int execute(std::istream& code, uint64_t mem_size) {
 		uint8_t* cell = memory + ptr_loc;
 		switch (cmd) {
 			case PTR_INC:
-				ptr_loc++;
-				if (ptr_loc == mem_size) {
-					ptr_loc = 0;
-				}
+				ptr_loc = ptr_offset(1);
 				break;
 			case PTR_DEC:
-				if (ptr_loc == 0) {
-					ptr_loc = mem_size;
-				}
-				ptr_loc--;
+				ptr_loc = ptr_offset(-1);
 				break;
 			case MEM_INC:
 				(*cell)++;
@@ -229,6 +234,26 @@ int verify(std::istream& code) {
 }
 
 /**
+ * @brief Calculates the pointer value at ptr_loc + offset.
+ * 
+ * @param offset offset to calculate
+ * @return New pointer value
+ */
+uint64_t ptr_offset(int offset) {
+	if (offset == 0) return ptr_loc;
+
+	if (offset > 0) {
+		uint64_t diff = mem_size - ptr_loc;
+		if (diff > offset) return ptr_loc + offset;
+		return 0 + (offset - diff);
+	}
+
+	uint64_t diff = ptr_loc;
+	if (diff >= (-offset)) return ptr_loc + offset;
+	return mem_size - ((-offset) - diff);
+}
+
+/**
  * @brief Fast forward code stream to the matching closed bracket.
  * 
  * @param code code stream
@@ -249,47 +274,90 @@ int jump_ff(std::istream& code) {
 	return -1;
 }
 
-void shell(uint64_t mem_size) {
+/**
+ * @brief Start Interactive Shell.
+ * 
+ */
+void shell() {
 	std::string input;
 	while (1) {
 		std::cout << SHELL_PS1;
 		std::cin >> input;
 
-		// quit
-		if (input == "q") {
-			break;
-		}
-		// print pointer location
-		if (input == "l") {
-			std::cout << ptr_loc << std::endl;
+		if (input[0] == SHELL_CMD_PREFIX) {
+			if (shell_cmd(input.substr(1)) == 1) return;
 			continue;
-		}
-		// print value in hex
-		if (input == "x") {
-			printf("0x%.2x\n", *(memory + ptr_loc));
-			continue;
-		}
-		// print value in decimal
-		if (input == "d") {
-			printf("%d\n", *(memory + ptr_loc));
-			continue;
-		}
-		// print memory around ptr_loc
-		if (input == "w") {
-			uint64_t window_start = ptr_loc - WINDOW_SIZE / 2;
-			std::cout << "val: \t";
-			for (int i = 0; i < WINDOW_SIZE; i++) {
-				printf(" 0x%.2x ", *(memory + window_start + i));
-			}
-			std::cout << std::endl;
-			std::cout << "ptr: \t";
-			for (int i = 0; i < WINDOW_SIZE; i++) {
-				printf(" %-4d ", window_start + i);
-			}
-			std::cout << std::endl;
 		}
 
 		std::istringstream bf_code(input);
-		execute(bf_code, mem_size);
+		execute(bf_code);
+		if (newline) std::cout << std::endl;
 	}
+}
+
+/**
+ * @brief Execute shell commands.
+ * 
+ * @param input string of commands
+ * @return 1 if quit is inputted or 0 otherwise
+ */
+int shell_cmd(std::string input) {
+	std::istringstream in_str(input);
+	char cmd;
+
+	while (in_str >> cmd) {
+		switch (cmd) {
+			case 'q':
+				return 1;
+			case 'h':
+				std::cout << "Interactive shell:" << std::endl;
+				std::cout << "  Executes inputted code" << std::endl;
+				std::cout << "  Start with '$' to input command" << std::endl << std::endl;
+				std::cout << "Commands:" << std::endl;
+				std::cout << "  h" << "\t" << "Help (this message)" << std::endl;
+				std::cout << "  q" << "\t" << "Exit" << std::endl;
+				std::cout << "  l" << "\t" << "Print pointer location" << std::endl;
+				std::cout << "  x" << "\t" << "Print current cell value in hex" << std::endl;
+				std::cout << "  d" << "\t" << "Print current cell value in decimal" << std::endl;
+				std::cout << "  w" << "\t" << "Print window" << std::endl;
+				std::cout << "  n" << "\t" << "Toggle newlines (after code is executed)" << std::endl;
+				break;
+			case 'l':
+				std::cout << ptr_loc << std::endl;
+				break;
+			case 'x':
+				printf("0x%.2x\n", *(memory + ptr_loc));
+				break;
+			case 'd':
+				printf("%d\n", *(memory + ptr_loc));
+				break;
+			case 'w':
+				std::cout << "val: \t";
+				for (int i = 0; i < 5; i++) {
+					int offset = i - SHELL_WINDOW_SIZE / 2;
+					printf(" 0x%.2x ", *(memory + ptr_offset(offset)));
+				}
+				std::cout << std::endl;
+				std::cout << "ptr: \t";
+				for (int i = 0; i < 5; i++) {
+					int offset = i - SHELL_WINDOW_SIZE / 2;
+					printf(" %-4d ", ptr_offset(offset) % 10000);
+				}
+				std::cout << std::endl;
+				break;
+			case 'n':
+				if (newline) {
+					std::cout << "Newlines: off" << std::endl;
+					newline = 0;
+				} else {
+					std::cout << "Newlines: on" << std::endl;
+					newline = 1;
+				}
+				break;
+			default:
+				std::cout << "Unknown command: " << cmd << std::endl;
+		}
+	}
+	
+	return 0;
 }
