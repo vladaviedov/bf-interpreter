@@ -1,3 +1,14 @@
+/**
+ * @file main.cpp
+ * @author Vladyslav Aviedov (vladaviedov@protonmail.com)
+ * @brief Interpreter for the Brainfuck esoteric language written in C++.
+ * @version 0.1
+ * @date 2022-02-11
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <iostream>
 #include <cstdlib>
 #include <stack>
@@ -103,6 +114,11 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
+/**
+ * @brief Print program usage and exit.
+ * 
+ * @param e exit code
+ */
 void usage(int e) {
 	std::cout << "Usage:" << std::endl;
 	std::cout << "   bfi [options]" << std::endl;
@@ -116,6 +132,13 @@ void usage(int e) {
 	exit(e);
 }
 
+/**
+ * @brief Executes a block of brainfuck code.
+ * 
+ * @param code code stream
+ * @param mem_size size of memory in bytes
+ * @return 0 on success or -1 if code is invalid
+ */
 int execute(std::istream& code, uint64_t mem_size) {
 	if (verify(code) < 0) {
 		std::cout << "Inputted code is invalid" << std::endl;
@@ -174,6 +197,12 @@ int execute(std::istream& code, uint64_t mem_size) {
 	return 0;
 }
 
+/**
+ * @brief Verifies that the code stream does not have any open brackets.
+ * 
+ * @param code code stream
+ * @return 0 if code is valid or -1 if invalid
+ */
 int verify(std::istream& code) {
 	char cmd;
 	int brackets_open = 0;
@@ -191,6 +220,12 @@ int verify(std::istream& code) {
 	return (brackets_open == 0) ? 0 : -1;
 }
 
+/**
+ * @brief Fast forward code stream to the matching closed bracket.
+ * 
+ * @param code code stream
+ * @return 0 on success or -1 on EOF
+ */
 int jump_ff(std::istream& code) {
 	char cmd;
 	int skip = 0;
