@@ -95,10 +95,11 @@ int main(int argc, char** argv) {
 
 	if (optind < argc) {
 		if (st == state::FILE_INPUT) {
-			usage(1);
+			std::cerr << "warning: -f flag is set, ignoring CLI argument" << std::endl;
+		} else {
+			st = state::ARG_INPUT;
+			arg_input = argv[optind];
 		}
-		st = state::ARG_INPUT;
-		arg_input = argv[optind];
 	} else {
 		if (st == state::NO_INPUT) {
 			interactive = 1;
@@ -146,8 +147,8 @@ void usage(int e) {
 	std::cout << "  " << "-h" << "\t\t\t" << "print usage" << std::endl;
 	std::cout << "  " << "-f <filepath>" << "\t\t" << "execute code from a file" << std::endl;
 	std::cout << "  " << "-m <size>" << "\t\t" << "specify memory size in bytes (default: 256)" << std::endl;
-	std::cout << "  " << "-i" << "\t\t\t" << "interactive shell (todo)" << std::endl;
-	std::cout << "  " << "-n" << "\t\t\t" << "print newline at the end the program" << std::endl;
+	std::cout << "  " << "-i" << "\t\t\t" << "interactive shell" << std::endl;
+	std::cout << "  " << "-n" << "\t\t\t" << "print newline at the end the program & toggle newline for shell" << std::endl;
 	exit(e);
 }
 
