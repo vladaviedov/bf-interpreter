@@ -91,8 +91,12 @@ int main(int argc, char** argv) {
 	}
 
 	// initialize memory
-	memory = (uint8_t*)std::calloc(mem_size, sizeof(uint8_t));
 	ptr_loc = 0;
+	memory = (uint8_t*)std::calloc(mem_size, sizeof(uint8_t));
+	if (memory == NULL) {
+		std::cerr << "Failed to allocate memory" << std::endl;
+		exit(1);
+	}
 
 	// run code
 	if (st == state::ARG_INPUT) {
@@ -141,7 +145,7 @@ void usage(int e) {
  */
 int execute(std::istream& code, uint64_t mem_size) {
 	if (verify(code) < 0) {
-		std::cout << "Inputted code is invalid" << std::endl;
+		std::cerr << "Inputted code is invalid" << std::endl;
 		return -1;
 	}
 
@@ -149,9 +153,9 @@ int execute(std::istream& code, uint64_t mem_size) {
 	code.seekg(0);
 
 	char cmd;
+	
 	while (code >> cmd) {
 		uint8_t* cell = memory + ptr_loc;
-		// std::cout << cmd;
 		switch (cmd) {
 			case PTR_INC:
 				ptr_loc++;
@@ -206,6 +210,7 @@ int execute(std::istream& code, uint64_t mem_size) {
 int verify(std::istream& code) {
 	char cmd;
 	int brackets_open = 0;
+
 	while (code >> cmd) {
 		switch (cmd) {
 			case JMP_FWD:
@@ -229,6 +234,7 @@ int verify(std::istream& code) {
 int jump_ff(std::istream& code) {
 	char cmd;
 	int skip = 0;
+
 	while (code >> cmd) {
 		if (cmd == JMP_FWD) skip++;
 		if (cmd == JMP_BCK) {
