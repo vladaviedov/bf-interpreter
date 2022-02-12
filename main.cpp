@@ -19,6 +19,8 @@
 #include <getopt.h>
 
 #define MEM_DEFAULT 256
+#define SHELL_PS1 "bf> "
+#define WINDOW_SIZE 5
 
 // brainfuck commands
 #define PTR_INC '>'
@@ -44,6 +46,7 @@ void usage(int e);
 int execute(std::istream& code, uint64_t mem_size);
 int verify(std::istream& code);
 int jump_ff(std::istream& code);
+void shell(uint64_t mem_size);
 
 int main(int argc, char** argv) {
 	uint64_t mem_size = MEM_DEFAULT;
@@ -110,7 +113,7 @@ int main(int argc, char** argv) {
 		if (newline) std::cout << std::endl;
 	}
 	if (interactive) {
-		std::cout << "TODO: Interactive" << std::endl;
+		shell(mem_size);
 	}
 
 	// exit
@@ -153,7 +156,7 @@ int execute(std::istream& code, uint64_t mem_size) {
 	code.seekg(0);
 
 	char cmd;
-	
+
 	while (code >> cmd) {
 		uint8_t* cell = memory + ptr_loc;
 		switch (cmd) {
@@ -244,4 +247,49 @@ int jump_ff(std::istream& code) {
 	}
 
 	return -1;
+}
+
+void shell(uint64_t mem_size) {
+	std::string input;
+	while (1) {
+		std::cout << SHELL_PS1;
+		std::cin >> input;
+
+		// quit
+		if (input == "q") {
+			break;
+		}
+		// print pointer location
+		if (input == "l") {
+			std::cout << ptr_loc << std::endl;
+			continue;
+		}
+		// print value in hex
+		if (input == "x") {
+			printf("0x%.2x\n", *(memory + ptr_loc));
+			continue;
+		}
+		// print value in decimal
+		if (input == "d") {
+			printf("%d\n", *(memory + ptr_loc));
+			continue;
+		}
+		// print memory around ptr_loc
+		if (input == "w") {
+			uint64_t window_start = ptr_loc - WINDOW_SIZE / 2;
+			std::cout << "val: \t";
+			for (int i = 0; i < WINDOW_SIZE; i++) {
+				printf(" 0x%.2x ", *(memory + window_start + i));
+			}
+			std::cout << std::endl;
+			std::cout << "ptr: \t";
+			for (int i = 0; i < WINDOW_SIZE; i++) {
+				printf(" %-4d ", window_start + i);
+			}
+			std::cout << std::endl;
+		}
+
+		std::istringstream bf_code(input);
+		execute(bf_code, mem_size);
+	}
 }
