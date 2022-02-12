@@ -38,11 +38,12 @@ int main(int argc, char** argv) {
 	uint64_t mem_size = MEM_DEFAULT;
 	enum state st = state::NO_INPUT;
 	int interactive = 0;
+	int newline = 0;
 	char* filepath;
 	char* arg_input;
 
 	char opt;
-	while ((opt = getopt(argc, argv, "hf:m:i")) != -1) {
+	while ((opt = getopt(argc, argv, "hf:m:in")) != -1) {
 		switch (opt) {
 			case 'h':
 				usage(0);
@@ -57,6 +58,9 @@ int main(int argc, char** argv) {
 			case 'i':
 				interactive = 1;
 				break;
+			case 'n':
+				newline = 1;
+				break;
 			case '?':
 				usage(1);
 				break;
@@ -64,6 +68,9 @@ int main(int argc, char** argv) {
 	}
 
 	if (optind < argc) {
+		if (st == state::FILE_INPUT) {
+			usage(1);
+		}
 		st = state::ARG_INPUT;
 		arg_input = argv[optind];
 	} else {
@@ -80,10 +87,12 @@ int main(int argc, char** argv) {
 	if (st == state::ARG_INPUT) {
 		std::istringstream bf_code(arg_input);
 		execute(bf_code, mem_size);
+		if (newline) std::cout << std::endl;
 	}
 	if (st == state::FILE_INPUT) {
 		std::ifstream bf_code(filepath);
 		execute(bf_code, mem_size);
+		if (newline) std::cout << std::endl;
 	}
 	if (interactive) {
 		std::cout << "TODO: Interactive" << std::endl;
@@ -95,7 +104,15 @@ int main(int argc, char** argv) {
 }
 
 void usage(int e) {
-	std::cout << "usage: " << std::endl;
+	std::cout << "Usage:" << std::endl;
+	std::cout << "   bfi [options]" << std::endl;
+	std::cout << "   bfi [options] <code>" << "\t" << "(if -f is not set)" << std::endl;
+	std::cout << "Options:" << std::endl;
+	std::cout << "  " << "-h" << "\t\t\t" << "print usage" << std::endl;
+	std::cout << "  " << "-f <filepath>" << "\t\t" << "execute code from a file" << std::endl;
+	std::cout << "  " << "-m <size>" << "\t\t" << "specify memory size in bytes (default: 256)" << std::endl;
+	std::cout << "  " << "-i" << "\t\t\t" << "interactive shell (todo)" << std::endl;
+	std::cout << "  " << "-n" << "\t\t\t" << "print newline at the end the program" << std::endl;
 	exit(e);
 }
 
