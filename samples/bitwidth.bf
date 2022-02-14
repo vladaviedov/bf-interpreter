@@ -197,20 +197,4 @@ Multiply by 256 again to get 65536
 	    And it should be followed by a newline.
 	]
 	===== END DEMO CODE =====
-<<  Finish at cell zero
-
-    © 2022 GitHub, Inc.
-
-    Terms
-    Privacy
-    Security
-    Status
-    Docs
-    Contact GitHub
-    Pricing
-    API
-    Training
-    Blog
-    About
-
-Loading complete
+	
