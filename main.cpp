@@ -19,7 +19,7 @@
 #include <getopt.h>
 
 #define VERSION 0.2
-#define MEM_DEFAULT 256
+#define MEM_DEFAULT 30000
 
 #define SHELL_PS1 "bf> "
 #define SHELL_CMD_PREFIX '$'
@@ -163,13 +163,13 @@ void usage(int e) {
 	#ifdef __GNU_LIBRARY__
 	std::cout << "  " << "-h, --help" << "\t\t\t" << "print usage" << std::endl;
 	std::cout << "  " << "-f, --file <filepath>" << "\t\t" << "execute code from a file" << std::endl;
-	std::cout << "  " << "-m, --memory, bytes <size>" << "\t" << "specify memory size in bytes (default: 256)" << std::endl;
+	std::cout << "  " << "-m, --memory, bytes <size>" << "\t" << "specify memory size in bytes (default: 30000)" << std::endl;
 	std::cout << "  " << "-i, --shell" << "\t\t\t" << "interactive shell" << std::endl;
 	std::cout << "  " << "-n, --newline" << "\t\t\t" << "print newline at the end the program & toggle newline for shell" << std::endl;
 	#else
 	std::cout << "  " << "-h" << "\t\t\t" << "print usage" << std::endl;
 	std::cout << "  " << "-f <filepath>" << "\t\t" << "execute code from a file" << std::endl;
-	std::cout << "  " << "-m <size>" << "\t\t" << "specify memory size in bytes (default: 256)" << std::endl;
+	std::cout << "  " << "-m <size>" << "\t\t" << "specify memory size in bytes (default: 30000)" << std::endl;
 	std::cout << "  " << "-i" << "\t\t\t" << "interactive shell" << std::endl;
 	std::cout << "  " << "-n" << "\t\t\t" << "print newline at the end the program & toggle newline for shell" << std::endl;
 	#endif
@@ -366,7 +366,7 @@ int shell_cmd(std::string input) {
 				std::cout << "ptr: \t";
 				for (int i = 0; i < 5; i++) {
 					int offset = i - SHELL_WINDOW_SIZE / 2;
-					printf(" %-4ld ", ptr_offset(offset) % 10000);
+					printf(" %-4lu ", ptr_offset(offset) % 10000);
 				}
 				std::cout << std::endl;
 				break;
