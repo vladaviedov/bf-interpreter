@@ -70,7 +70,7 @@ int shell_cmd(std::string input);
 
 int main(int argc, char** argv) {
 	mem_size = MEM_DEFAULT;
-	enum state st = state::NO_INPUT;
+	enum state st = ::NO_INPUT;
 	int interactive = 0;
 	newline = 0;
 	char* filepath;
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
 				break;
 			case 'f':
 				filepath = optarg;
-				st = state::FILE_INPUT;
+				st = ::FILE_INPUT;
 				break;
 			case 'm':
 				mem_size = atoi(optarg);
@@ -110,14 +110,14 @@ int main(int argc, char** argv) {
 	}
 
 	if (optind < argc) {
-		if (st == state::FILE_INPUT) {
+		if (st == ::FILE_INPUT) {
 			std::cerr << "warning: -f flag is set, ignoring CLI argument" << std::endl;
 		} else {
-			st = state::ARG_INPUT;
+			st = ::ARG_INPUT;
 			arg_input = argv[optind];
 		}
 	} else {
-		if (st == state::NO_INPUT) {
+		if (st == ::NO_INPUT) {
 			interactive = 1;
 		}
 	}
@@ -131,12 +131,12 @@ int main(int argc, char** argv) {
 	}
 
 	// run code
-	if (st == state::ARG_INPUT) {
+	if (st == ::ARG_INPUT) {
 		std::istringstream bf_code(arg_input);
 		execute(bf_code);
 		if (newline) std::cout << std::endl;
 	}
-	if (st == state::FILE_INPUT) {
+	if (st == ::FILE_INPUT) {
 		std::ifstream bf_code(filepath);
 		execute(bf_code);
 		if (newline) std::cout << std::endl;
@@ -366,7 +366,7 @@ int shell_cmd(std::string input) {
 				std::cout << "ptr: \t";
 				for (int i = 0; i < 5; i++) {
 					int offset = i - SHELL_WINDOW_SIZE / 2;
-					printf(" %-4d ", ptr_offset(offset) % 10000);
+					printf(" %-4ld ", ptr_offset(offset) % 10000);
 				}
 				std::cout << std::endl;
 				break;
