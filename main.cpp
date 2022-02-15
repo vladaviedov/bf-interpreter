@@ -19,7 +19,7 @@
 #include <getopt.h>
 
 #define VERSION 0.2
-#define MEM_DEFAULT 256
+#define MEM_DEFAULT 30000
 
 #define SHELL_PS1 "bf> "
 #define SHELL_CMD_PREFIX '$'
@@ -48,6 +48,18 @@ enum state {
 	FILE_INPUT
 };
 
+#ifdef __GNU_LIBRARY__
+struct option long_opts[] = {
+	{"help", 	no_argument,		0, 'h'},
+	{"version",	no_argument,		0, 'v'},
+	{"file",	required_argument,	0, 'f'},
+	{"memory",	required_argument,	0, 'm'},
+	{"bytes",	required_argument,	0, 'm'},
+	{"newline",	no_argument,		0, 'n'},
+	{"shell",	no_argument,		0, 'i'}
+};
+#endif
+
 void usage(int e);
 int execute(std::istream& code);
 int verify(std::istream& code);
@@ -58,14 +70,18 @@ int shell_cmd(std::string input);
 
 int main(int argc, char** argv) {
 	mem_size = MEM_DEFAULT;
-	enum state st = state::NO_INPUT;
+	enum state st = ::NO_INPUT;
 	int interactive = 0;
 	newline = 0;
 	char* filepath;
 	char* arg_input;
 
 	char opt;
+	#ifdef __GNU_LIBRARY__
+	while ((opt = getopt_long(argc, argv, "hvf:m:in", long_opts, NULL)) != -1) {
+	#else
 	while ((opt = getopt(argc, argv, "hvf:m:in")) != -1) {
+	#endif
 		switch (opt) {
 			case 'h':
 				usage(0);
@@ -76,7 +92,7 @@ int main(int argc, char** argv) {
 				break;
 			case 'f':
 				filepath = optarg;
-				st = state::FILE_INPUT;
+				st = ::FILE_INPUT;
 				break;
 			case 'm':
 				mem_size = atoi(optarg);
@@ -94,14 +110,14 @@ int main(int argc, char** argv) {
 	}
 
 	if (optind < argc) {
-		if (st == state::FILE_INPUT) {
+		if (st == ::FILE_INPUT) {
 			std::cerr << "warning: -f flag is set, ignoring CLI argument" << std::endl;
 		} else {
-			st = state::ARG_INPUT;
+			st = ::ARG_INPUT;
 			arg_input = argv[optind];
 		}
 	} else {
-		if (st == state::NO_INPUT) {
+		if (st == ::NO_INPUT) {
 			interactive = 1;
 		}
 	}
@@ -115,12 +131,12 @@ int main(int argc, char** argv) {
 	}
 
 	// run code
-	if (st == state::ARG_INPUT) {
+	if (st == ::ARG_INPUT) {
 		std::istringstream bf_code(arg_input);
 		execute(bf_code);
 		if (newline) std::cout << std::endl;
 	}
-	if (st == state::FILE_INPUT) {
+	if (st == ::FILE_INPUT) {
 		std::ifstream bf_code(filepath);
 		execute(bf_code);
 		if (newline) std::cout << std::endl;
@@ -144,11 +160,19 @@ void usage(int e) {
 	std::cout << "   bfi [options]" << std::endl;
 	std::cout << "   bfi [options] <code>" << "\t" << "(if -f is not set)" << std::endl;
 	std::cout << "Options:" << std::endl;
+	#ifdef __GNU_LIBRARY__
+	std::cout << "  " << "-h, --help" << "\t\t\t" << "print usage" << std::endl;
+	std::cout << "  " << "-f, --file <filepath>" << "\t\t" << "execute code from a file" << std::endl;
+	std::cout << "  " << "-m, --memory, bytes <size>" << "\t" << "specify memory size in bytes (default: 30000)" << std::endl;
+	std::cout << "  " << "-i, --shell" << "\t\t\t" << "interactive shell" << std::endl;
+	std::cout << "  " << "-n, --newline" << "\t\t\t" << "print newline at the end the program & toggle newline for shell" << std::endl;
+	#else
 	std::cout << "  " << "-h" << "\t\t\t" << "print usage" << std::endl;
 	std::cout << "  " << "-f <filepath>" << "\t\t" << "execute code from a file" << std::endl;
-	std::cout << "  " << "-m <size>" << "\t\t" << "specify memory size in bytes (default: 256)" << std::endl;
+	std::cout << "  " << "-m <size>" << "\t\t" << "specify memory size in bytes (default: 30000)" << std::endl;
 	std::cout << "  " << "-i" << "\t\t\t" << "interactive shell" << std::endl;
 	std::cout << "  " << "-n" << "\t\t\t" << "print newline at the end the program & toggle newline for shell" << std::endl;
+	#endif
 	exit(e);
 }
 
@@ -342,7 +366,7 @@ int shell_cmd(std::string input) {
 				std::cout << "ptr: \t";
 				for (int i = 0; i < 5; i++) {
 					int offset = i - SHELL_WINDOW_SIZE / 2;
-					printf(" %-4d ", ptr_offset(offset) % 10000);
+					printf(" %-4lu ", ptr_offset(offset) % 10000);
 				}
 				std::cout << std::endl;
 				break;
