@@ -2,8 +2,8 @@
  * @file main.cpp
  * @author Vladyslav Aviedov (vladaviedov@protonmail.com)
  * @brief Interpreter for the Brainfuck esoteric language written in C++.
- * @version 0.2
- * @date 2022-02-11
+ * @version 0.3
+ * @date 2022-02-17
  * 
  * @copyright Copyright (c) 2022
  * 
@@ -267,15 +267,17 @@ int verify(std::istream& code) {
 uint64_t ptr_offset(int offset) {
 	if (offset == 0) return ptr_loc;
 
+	uint64_t offset_abs = (offset < 0) ? (-offset) : offset;
+
 	if (offset > 0) {
 		uint64_t diff = mem_size - ptr_loc;
-		if (diff > offset) return ptr_loc + offset;
-		return 0 + (offset - diff);
+		if (diff > offset_abs) return ptr_loc + offset_abs;
+		return 0 + (offset_abs - diff);
 	}
 
 	uint64_t diff = ptr_loc;
-	if (diff >= (-offset)) return ptr_loc + offset;
-	return mem_size - ((-offset) - diff);
+	if (diff >= offset_abs) return ptr_loc - offset_abs;
+	return mem_size - (offset_abs - diff);
 }
 
 /**
