@@ -2,8 +2,8 @@
  * @file main.cpp
  * @author Vladyslav Aviedov (vladaviedov@protonmail.com)
  * @brief Interpreter for the Brainfuck esoteric language written in C++.
- * @version 0.3
- * @date 2022-02-17
+ * @version 0.3.1
+ * @date 2022-03-02
  * 
  * @copyright Copyright (c) 2022
  * 
@@ -18,7 +18,7 @@
 #include <sstream>
 #include <getopt.h>
 
-#define VERSION 0.2
+#define VERSION "0.3.1"
 #define MEM_DEFAULT 30000
 
 #define SHELL_PS1 "bf> "
@@ -56,17 +56,20 @@ struct option long_opts[] = {
 	{"memory",	required_argument,	0, 'm'},
 	{"bytes",	required_argument,	0, 'm'},
 	{"newline",	no_argument,		0, 'n'},
-	{"shell",	no_argument,		0, 'i'}
+	{"shell",	no_argument,		0, 'i'},
+	{"repl",	no_argument,		0, 'i'}
 };
 #endif
 
 void usage(int e);
+void version();
 int execute(std::istream& code);
 int verify(std::istream& code);
 uint64_t ptr_offset(int offset);
 int jump_ff(std::istream& code);
 void shell();
 int shell_cmd(std::string input);
+void shell_help();
 
 int main(int argc, char** argv) {
 	mem_size = MEM_DEFAULT;
@@ -87,8 +90,7 @@ int main(int argc, char** argv) {
 				usage(0);
 				break;
 			case 'v':
-				std::cout << "bfi " << VERSION << std::endl;
-				exit(0);
+				version();
 				break;
 			case 'f':
 				filepath = optarg;
@@ -164,16 +166,25 @@ void usage(int e) {
 	std::cout << "  " << "-h, --help" << "\t\t\t" << "print usage" << std::endl;
 	std::cout << "  " << "-f, --file <filepath>" << "\t\t" << "execute code from a file" << std::endl;
 	std::cout << "  " << "-m, --memory, bytes <size>" << "\t" << "specify memory size in bytes (default: 30000)" << std::endl;
-	std::cout << "  " << "-i, --shell" << "\t\t\t" << "interactive shell" << std::endl;
+	std::cout << "  " << "-i, --shell, repl" << "\t\t" << "interactive REPL shell" << std::endl;
 	std::cout << "  " << "-n, --newline" << "\t\t\t" << "print newline at the end the program & toggle newline for shell" << std::endl;
 	#else
 	std::cout << "  " << "-h" << "\t\t\t" << "print usage" << std::endl;
 	std::cout << "  " << "-f <filepath>" << "\t\t" << "execute code from a file" << std::endl;
 	std::cout << "  " << "-m <size>" << "\t\t" << "specify memory size in bytes (default: 30000)" << std::endl;
-	std::cout << "  " << "-i" << "\t\t\t" << "interactive shell" << std::endl;
+	std::cout << "  " << "-i" << "\t\t\t" << "interactive REPL shell" << std::endl;
 	std::cout << "  " << "-n" << "\t\t\t" << "print newline at the end the program & toggle newline for shell" << std::endl;
 	#endif
 	exit(e);
+}
+
+/**
+ * @brief Print program version and exit with code 0.
+ * 
+ */
+void version() {
+	std::cout << "bfi " << VERSION << std::endl;
+	exit(0);
 }
 
 /**
@@ -183,7 +194,7 @@ void usage(int e) {
  * @return 0 on success or -1 if code is invalid
  */
 int execute(std::istream& code) {
-	if (verify(code) < 0) {
+	if (!verify(code)) {
 		std::cerr << "Inputted code is invalid" << std::endl;
 		return -1;
 	}
@@ -238,7 +249,7 @@ int execute(std::istream& code) {
  * @brief Verifies that the code stream does not have any open brackets.
  * 
  * @param code code stream
- * @return 0 if code is valid or -1 if invalid
+ * @return 1 if code is valid, 0 if invalid
  */
 int verify(std::istream& code) {
 	char cmd;
@@ -255,14 +266,14 @@ int verify(std::istream& code) {
 		}
 	}
 
-	return (brackets_open == 0) ? 0 : -1;
+	return (brackets_open == 0);
 }
 
 /**
- * @brief Calculates the pointer value at ptr_loc + offset.
+ * @brief Calculates the location value at ptr_loc + offset.
  * 
  * @param offset offset to calculate
- * @return New pointer value
+ * @return New location value
  */
 uint64_t ptr_offset(int offset) {
 	if (offset == 0) return ptr_loc;
@@ -302,7 +313,7 @@ int jump_ff(std::istream& code) {
 }
 
 /**
- * @brief Start Interactive Shell.
+ * @brief Start REPL Shell.
  * 
  */
 void shell() {
@@ -337,17 +348,7 @@ int shell_cmd(std::string input) {
 			case 'q':
 				return 1;
 			case 'h':
-				std::cout << "Interactive shell:" << std::endl;
-				std::cout << "  Executes inputted code" << std::endl;
-				std::cout << "  Start with '$' to input command" << std::endl << std::endl;
-				std::cout << "Commands:" << std::endl;
-				std::cout << "  h" << "\t" << "Help (this message)" << std::endl;
-				std::cout << "  q" << "\t" << "Exit" << std::endl;
-				std::cout << "  l" << "\t" << "Print pointer location" << std::endl;
-				std::cout << "  x" << "\t" << "Print current cell value in hex" << std::endl;
-				std::cout << "  d" << "\t" << "Print current cell value in decimal" << std::endl;
-				std::cout << "  w" << "\t" << "Print window" << std::endl;
-				std::cout << "  n" << "\t" << "Toggle newlines (after code is executed)" << std::endl;
+				shell_help();
 				break;
 			case 'l':
 				std::cout << ptr_loc << std::endl;
@@ -387,4 +388,22 @@ int shell_cmd(std::string input) {
 	}
 	
 	return 0;
+}
+
+/**
+ * @brief Print shell help information.
+ * 
+ */
+void shell_help() {
+	std::cout << "Interactive/REPL shell:" << std::endl;
+	std::cout << "  Evaluates brainfuck code" << std::endl;
+	std::cout << "  Start input with '$' to input non-brainfuck commands" << std::endl << std::endl;
+	std::cout << "Commands:" << std::endl;
+	std::cout << "  h" << "\t" << "Help (this message)" << std::endl;
+	std::cout << "  q" << "\t" << "Exit" << std::endl;
+	std::cout << "  l" << "\t" << "Print pointer location" << std::endl;
+	std::cout << "  x" << "\t" << "Print current cell value in hex" << std::endl;
+	std::cout << "  d" << "\t" << "Print current cell value in decimal" << std::endl;
+	std::cout << "  w" << "\t" << "Print window" << std::endl;
+	std::cout << "  n" << "\t" << "Toggle newlines (after code is executed)" << std::endl;
 }
