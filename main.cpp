@@ -2,8 +2,8 @@
  * @file main.cpp
  * @author Vladyslav Aviedov (vladaviedov@protonmail.com)
  * @brief Interpreter for the Brainfuck esoteric language written in C++.
- * @version 0.3.1
- * @date 2022-03-02
+ * @version 0.3.2
+ * @date 2022-03-11
  * 
  * @copyright Copyright (c) 2022
  * 
@@ -16,6 +16,7 @@
 #include <istream>
 #include <fstream>
 #include <sstream>
+#include <cstring>
 #include <getopt.h>
 
 #define VERSION "0.3.1"
@@ -382,6 +383,11 @@ int shell_cmd(std::string input) {
 					newline = 1;
 				}
 				break;
+			case 'r':
+				std::memset(memory, 0, mem_size);
+				ptr_loc = 0;
+				std::cout << "Memory zeroed" << std::endl;
+				break;
 			default:
 				std::cout << "Unknown command: " << cmd << std::endl;
 		}
@@ -406,4 +412,5 @@ void shell_help() {
 	std::cout << "  d" << "\t" << "Print current cell value in decimal" << std::endl;
 	std::cout << "  w" << "\t" << "Print window" << std::endl;
 	std::cout << "  n" << "\t" << "Toggle newlines (after code is executed)" << std::endl;
+	std::cout << "  r" << "\t" << "Reset (zero) memory and return pointer to 0" << std::endl;
 }
