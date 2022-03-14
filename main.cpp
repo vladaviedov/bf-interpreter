@@ -19,7 +19,7 @@
 #include <cstring>
 #include <getopt.h>
 
-#define VERSION "0.3.1"
+#define VERSION "0.3.2"
 #define MEM_DEFAULT 30000
 
 #define SHELL_PS1 "bf> "
@@ -318,6 +318,7 @@ int jump_ff(std::istream& code) {
  * 
  */
 void shell() {
+	// Enter REPL loop
 	std::string input;
 	while (1) {
 		std::cout << SHELL_PS1;
