@@ -2,8 +2,8 @@
  * @file main.cpp
  * @author Vladyslav Aviedov (vladaviedov@protonmail.com)
  * @brief Interpreter for the Brainfuck esoteric language written in C++.
- * @version 0.3.2
- * @date 2022-03-11
+ * @version 0.4.0
+ * @date 2022-03-14
  * 
  * @copyright Copyright (c) 2022
  * 
@@ -18,8 +18,9 @@
 #include <sstream>
 #include <cstring>
 #include <getopt.h>
+#include <unistd.h>
 
-#define VERSION "0.3.2"
+#define VERSION "0.4.0"
 #define MEM_DEFAULT 30000
 
 #define SHELL_PS1 "bf> "
@@ -46,7 +47,8 @@ int newline;
 enum state {
 	NO_INPUT,
 	ARG_INPUT,
-	FILE_INPUT
+	FILE_INPUT,
+	PIPED_INPUT
 };
 
 #ifdef __GNU_LIBRARY__
@@ -112,6 +114,11 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	
+	if (!isatty(fileno(stdin))) {
+		st = ::PIPED_INPUT;
+	}
+
 	if (optind < argc) {
 		if (st == ::FILE_INPUT) {
 			std::cerr << "warning: -f flag is set, ignoring CLI argument" << std::endl;
@@ -137,12 +144,25 @@ int main(int argc, char** argv) {
 	if (st == ::ARG_INPUT) {
 		std::istringstream bf_code(arg_input);
 		execute(bf_code);
-		if (newline) std::cout << std::endl;
 	}
 	if (st == ::FILE_INPUT) {
 		std::ifstream bf_code(filepath);
 		execute(bf_code);
-		if (newline) std::cout << std::endl;
+	}
+	if (st == ::PIPED_INPUT) {
+		// Read piped input to string stream
+		std::istreambuf_iterator<char> eos;
+		std::string s(std::istreambuf_iterator<char>(std::cin), eos);
+		std::istringstream bf_code(s);
+
+		// Redirect stdin
+		freopen("/dev/tty", "r", stdin);
+
+		execute(bf_code);
+	}
+
+	if (newline) {
+		std::cout << std::endl;
 	}
 	if (interactive) {
 		shell();

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(bfi VERSION 0.3.2)
+project(bfi VERSION 0.4.0)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra" CACHE STRING "" FORCE)
 add_executable(bfi main.cpp)
 install(TARGETS bfi)
