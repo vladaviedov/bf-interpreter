@@ -1,14 +1,13 @@
 /**
  * @file main.cpp
  * @author Vladyslav Aviedov (vladaviedov@protonmail.com)
- * @brief Interpreter for the Brainfuck esoteric language written in C++.
- * @version 0.4.0
- * @date 2022-03-14
+ * @brief Entry point for bfi.
+ * @version 0.5.0
+ * @date 2022-03-25
  * 
  * @copyright Copyright (c) 2022
  * 
  */
-
 #include <iostream>
 #include <cstdlib>
 #include <stack>
@@ -20,12 +19,11 @@
 #include <getopt.h>
 #include <unistd.h>
 
-#define VERSION "0.4.0"
-#define MEM_DEFAULT 30000
+#include "bf.hpp"
+#include "shell.hpp"
 
-#define SHELL_PS1 "bf> "
-#define SHELL_CMD_PREFIX '$'
-#define SHELL_WINDOW_SIZE 5
+#define VERSION "0.5.0"
+#define MEM_DEFAULT 30000
 
 // brainfuck commands
 #define PTR_INC '>'
@@ -37,12 +35,8 @@
 #define JMP_FWD '['
 #define JMP_BCK ']'
 
-uint8_t* memory;
-uint64_t ptr_loc;
-uint64_t mem_size;
-std::stack<uint64_t> goto_stack;
-
-int newline;
+static int newline = 0;
+static int interactive = 0;
 
 enum state {
 	NO_INPUT,
@@ -66,19 +60,14 @@ struct option long_opts[] = {
 
 void usage(int e);
 void version();
-int execute(std::istream& code);
-int verify(std::istream& code);
-uint64_t ptr_offset(int offset);
-int jump_ff(std::istream& code);
 void shell();
 int shell_cmd(std::string input);
 void shell_help();
 
 int main(int argc, char** argv) {
-	mem_size = MEM_DEFAULT;
+	uint64_t mem_size = MEM_DEFAULT;
 	enum state st = ::NO_INPUT;
-	int interactive = 0;
-	newline = 0;
+
 	char* filepath;
 	char* arg_input;
 
@@ -114,7 +103,6 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	
 	if (!isatty(fileno(stdin))) {
 		st = ::PIPED_INPUT;
 	}
@@ -133,9 +121,7 @@ int main(int argc, char** argv) {
 	}
 
 	// initialize memory
-	ptr_loc = 0;
-	memory = (uint8_t*)std::calloc(mem_size, sizeof(uint8_t));
-	if (memory == NULL) {
+	if (bf_malloc(mem_size) < 0) {
 		std::cerr << "Failed to allocate memory" << std::endl;
 		exit(1);
 	}
@@ -143,11 +129,11 @@ int main(int argc, char** argv) {
 	// run code
 	if (st == ::ARG_INPUT) {
 		std::istringstream bf_code(arg_input);
-		execute(bf_code);
+		bf_execute(bf_code);
 	}
 	if (st == ::FILE_INPUT) {
 		std::ifstream bf_code(filepath);
-		execute(bf_code);
+		bf_execute(bf_code);
 	}
 	if (st == ::PIPED_INPUT) {
 		// Read piped input to string stream
@@ -158,18 +144,18 @@ int main(int argc, char** argv) {
 		// Redirect stdin
 		freopen("/dev/tty", "r", stdin);
 
-		execute(bf_code);
+		bf_execute(bf_code);
 	}
 
 	if (newline) {
 		std::cout << std::endl;
 	}
 	if (interactive) {
-		shell();
+		shell(newline);
 	}
 
 	// exit
-	std::free(memory);
+	bf_free();
 	return 0;
 }
 
@@ -206,232 +192,4 @@ void usage(int e) {
 void version() {
 	std::cout << "bfi " << VERSION << std::endl;
 	exit(0);
-}
-
-/**
- * @brief Executes a block of brainfuck code.
- * 
- * @param code code stream
- * @return 0 on success or -1 if code is invalid
- */
-int execute(std::istream& code) {
-	if (!verify(code)) {
-		std::cerr << "Inputted code is invalid" << std::endl;
-		return -1;
-	}
-
-	code.clear();
-	code.seekg(0);
-
-	char cmd;
-
-	while (code >> cmd) {
-		uint8_t* cell = memory + ptr_loc;
-		switch (cmd) {
-			case PTR_INC:
-				ptr_loc = ptr_offset(1);
-				break;
-			case PTR_DEC:
-				ptr_loc = ptr_offset(-1);
-				break;
-			case MEM_INC:
-				(*cell)++;
-				break;
-			case MEM_DEC:
-				(*cell)--;
-				break;
-			case PUT_CHR:
-				putchar(*cell);
-				break;
-			case GET_CHR:
-				*cell = getchar();
-				break;
-			case JMP_FWD:
-				if (*cell != 0) {
-					goto_stack.push(code.tellg());
-				} else {
-					jump_ff(code);
-				}
-				break;
-			case JMP_BCK:
-				if (*cell != 0) {
-					code.seekg(goto_stack.top());
-				} else {
-					goto_stack.pop();
-				}
-				break;
-		}
-	}
-
-	return 0;
-}
-
-/**
- * @brief Verifies that the code stream does not have any open brackets.
- * 
- * @param code code stream
- * @return 1 if code is valid, 0 if invalid
- */
-int verify(std::istream& code) {
-	char cmd;
-	int brackets_open = 0;
-
-	while (code >> cmd) {
-		switch (cmd) {
-			case JMP_FWD:
-				brackets_open++;
-				break;
-			case JMP_BCK:
-				brackets_open--;
-				break;
-		}
-	}
-
-	return (brackets_open == 0);
-}
-
-/**
- * @brief Calculates the location value at ptr_loc + offset.
- * 
- * @param offset offset to calculate
- * @return New location value
- */
-uint64_t ptr_offset(int offset) {
-	if (offset == 0) return ptr_loc;
-
-	uint64_t offset_abs = (offset < 0) ? (-offset) : offset;
-
-	if (offset > 0) {
-		uint64_t diff = mem_size - ptr_loc;
-		if (diff > offset_abs) return ptr_loc + offset_abs;
-		return 0 + (offset_abs - diff);
-	}
-
-	uint64_t diff = ptr_loc;
-	if (diff >= offset_abs) return ptr_loc - offset_abs;
-	return mem_size - (offset_abs - diff);
-}
-
-/**
- * @brief Fast forward code stream to the matching closed bracket.
- * 
- * @param code code stream
- * @return 0 on success or -1 on EOF
- */
-int jump_ff(std::istream& code) {
-	char cmd;
-	int skip = 0;
-
-	while (code >> cmd) {
-		if (cmd == JMP_FWD) skip++;
-		if (cmd == JMP_BCK) {
-			if (skip > 0) skip--;
-			else return 0;
-		}
-	}
-
-	return -1;
-}
-
-/**
- * @brief Start REPL Shell.
- * 
- */
-void shell() {
-	// Enter REPL loop
-	std::string input;
-	while (1) {
-		std::cout << SHELL_PS1;
-		std::cin >> input;
-
-		if (input[0] == SHELL_CMD_PREFIX) {
-			if (shell_cmd(input.substr(1)) == 1) return;
-			continue;
-		}
-
-		std::istringstream bf_code(input);
-		execute(bf_code);
-		if (newline) std::cout << std::endl;
-	}
-}
-
-/**
- * @brief Execute shell commands.
- * 
- * @param input string of commands
- * @return 1 if quit is inputted or 0 otherwise
- */
-int shell_cmd(std::string input) {
-	std::istringstream in_str(input);
-	char cmd;
-
-	while (in_str >> cmd) {
-		switch (cmd) {
-			case 'q':
-				return 1;
-			case 'h':
-				shell_help();
-				break;
-			case 'l':
-				std::cout << ptr_loc << std::endl;
-				break;
-			case 'x':
-				printf("0x%.2x\n", *(memory + ptr_loc));
-				break;
-			case 'd':
-				printf("%d\n", *(memory + ptr_loc));
-				break;
-			case 'w':
-				std::cout << "val: \t";
-				for (int i = 0; i < 5; i++) {
-					int offset = i - SHELL_WINDOW_SIZE / 2;
-					printf(" 0x%.2x ", *(memory + ptr_offset(offset)));
-				}
-				std::cout << std::endl;
-				std::cout << "ptr: \t";
-				for (int i = 0; i < 5; i++) {
-					int offset = i - SHELL_WINDOW_SIZE / 2;
-					printf(" %-4lu ", ptr_offset(offset) % 10000);
-				}
-				std::cout << std::endl;
-				break;
-			case 'n':
-				if (newline) {
-					std::cout << "Newlines: off" << std::endl;
-					newline = 0;
-				} else {
-					std::cout << "Newlines: on" << std::endl;
-					newline = 1;
-				}
-				break;
-			case 'r':
-				std::memset(memory, 0, mem_size);
-				ptr_loc = 0;
-				std::cout << "Memory zeroed" << std::endl;
-				break;
-			default:
-				std::cout << "Unknown command: " << cmd << std::endl;
-		}
-	}
-	
-	return 0;
-}
-
-/**
- * @brief Print shell help information.
- * 
- */
-void shell_help() {
-	std::cout << "Interactive/REPL shell:" << std::endl;
-	std::cout << "  Evaluates brainfuck code" << std::endl;
-	std::cout << "  Start input with '$' to input non-brainfuck commands" << std::endl << std::endl;
-	std::cout << "Commands:" << std::endl;
-	std::cout << "  h" << "\t" << "Help (this message)" << std::endl;
-	std::cout << "  q" << "\t" << "Exit" << std::endl;
-	std::cout << "  l" << "\t" << "Print pointer location" << std::endl;
-	std::cout << "  x" << "\t" << "Print current cell value in hex" << std::endl;
-	std::cout << "  d" << "\t" << "Print current cell value in decimal" << std::endl;
-	std::cout << "  w" << "\t" << "Print window" << std::endl;
-	std::cout << "  n" << "\t" << "Toggle newlines (after code is executed)" << std::endl;
-	std::cout << "  r" << "\t" << "Reset (zero) memory and return pointer to 0" << std::endl;
 }
