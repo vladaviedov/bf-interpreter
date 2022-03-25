@@ -8,7 +8,6 @@
  * @copyright Copyright (c) 2022
  * 
  */
-
 #include <iostream>
 #include <cstdlib>
 #include <stack>
@@ -20,7 +19,7 @@
 #include <getopt.h>
 #include <unistd.h>
 
-#include "bf.h"
+#include "bf.hpp"
 
 #define VERSION "0.5.0"
 #define MEM_DEFAULT 30000

@@ -7,7 +7,7 @@
  * @copyright Copyright (c) 2022
  * 
  */
-#include "bf.h"
+#include "bf.hpp"
 
 #include <iostream>
 #include <istream>
@@ -26,10 +26,10 @@
 #define JMP_BCK ']'
 
 // brainfuck memory
-uint8_t* mem;
-uint64_t memsize;
-uint64_t ptr;
-std::stack<uint64_t> goto_stack;
+static uint8_t* mem;
+static uint64_t memsize;
+static uint64_t ptr;
+static std::stack<uint64_t> goto_stack;
 
 int verify(std::istream& code);
 int jump_ff(std::istream& code);
@@ -77,10 +77,10 @@ int bf_execute(std::istream& code) {
 				(*cell)--;
 				break;
 			case PUT_CHR:
-				putchar(*cell);
+				std::cout << *cell;
 				break;
 			case GET_CHR:
-				*cell = getchar();
+				std::cin >> *cell;
 				break;
 			case JMP_FWD:
 				if (*cell != 0) {

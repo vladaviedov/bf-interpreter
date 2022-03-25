@@ -1,5 +1,5 @@
 /**
- * @file bf.h
+ * @file bf.hpp
  * @author Vladyslav Aviedov <vladaviedov@protonmail.com>
  * @brief Header for brainfuck interpreter functions.
  * @date 2022-03-25
@@ -7,11 +7,10 @@
  * @copyright Copyright (c) 2022
  * 
  */
-#ifndef BFI_BF_H
-#define BFI_BF_H
+#ifndef BFI_BF_HPP
+#define BFI_BF_HPP
 
 #include <istream>
-#include <unistd.h>
 
 /**
  * @brief Get current pointer location
@@ -78,4 +77,4 @@ void bf_reset();
  */
 int bf_execute(std::istream& code);
 
-#endif
+#endif // BFI_BF_HPP
