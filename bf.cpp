@@ -26,13 +26,13 @@
 #define JMP_BCK ']'
 
 // brainfuck memory
-static uint8_t* mem;
+static uint8_t *mem;
 static uint64_t memsize;
 static uint64_t ptr;
 static std::stack<uint64_t> goto_stack;
 
-int verify(std::istream& code);
-int jump_ff(std::istream& code);
+int verify(std::istream &code);
+int jump_ff(std::istream &code);
 
 uint64_t bf_ptr() {
 	return ptr;
@@ -50,7 +50,7 @@ uint8_t bf_value(uint64_t location) {
 	return mem[location];
 }
 
-int bf_execute(std::istream& code) {
+int bf_execute(std::istream &code) {
 	if (!verify(code)) {
 		std::cerr << "Inputted code is invalid" << std::endl;
 		return -1;
@@ -62,7 +62,7 @@ int bf_execute(std::istream& code) {
 	char cmd;
 
 	while (code >> cmd) {
-		uint8_t* cell = mem + ptr;
+		uint8_t *cell = mem + ptr;
 		switch (cmd) {
 			case PTR_INC:
 				ptr = bf_ptroffset(1);
@@ -121,7 +121,7 @@ uint64_t bf_ptroffset(int offset) {
 int bf_malloc(uint64_t size) {
 	if (mem) std::free(mem);
 
-	mem = (uint8_t*)std::calloc(size, sizeof(uint8_t));
+	mem = (uint8_t *)std::calloc(size, sizeof(uint8_t));
 	if (mem == NULL) {
 		return -1;
 	}
@@ -147,7 +147,7 @@ void bf_reset() {
  * @param code code stream
  * @return 1 if code is valid, 0 if invalid
  */
-int verify(std::istream& code) {
+int verify(std::istream &code) {
 	char cmd;
 	int brackets_open = 0;
 
@@ -171,7 +171,7 @@ int verify(std::istream& code) {
  * @param code code stream
  * @return 0 on success or -1 on EOF
  */
-int jump_ff(std::istream& code) {
+int jump_ff(std::istream &code) {
 	char cmd;
 	int skip = 0;
 

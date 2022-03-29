@@ -60,16 +60,13 @@ struct option long_opts[] = {
 
 void usage(int e);
 void version();
-void shell();
-int shell_cmd(std::string input);
-void shell_help();
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
 	uint64_t mem_size = MEM_DEFAULT;
 	enum state st = ::NO_INPUT;
 
-	char* filepath;
-	char* arg_input;
+	char *filepath;
+	char *arg_input;
 
 	char opt;
 	#ifdef __GNU_LIBRARY__
@@ -186,7 +183,7 @@ void usage(int e) {
 }
 
 /**
- * @brief Print program version and exit with code 0.
+ * @brief Print program version and exit.
  * 
  */
 void version() {

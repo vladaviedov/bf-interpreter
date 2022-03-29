@@ -1,7 +1,7 @@
 /**
  * @file shell.hpp
  * @author Vladyslav Aviedov <vladaviedov@protonmail.com>
- * @brief Header for REPL shell.
+ * @brief REPL shell for brainfuck.
  * @date 2022-03-25
  * 
  * @copyright Copyright (c) 2022
@@ -11,7 +11,7 @@
 #define BFI_SHELL_HPP
 
 /**
- * @brief Start the REPL shell
+ * @brief Start the REPL shell.
  * 
  * @param nl newline status
  */
