@@ -2,16 +2,22 @@
  * @file shell.cpp
  * @author Vladyslav Aviedov <vladaviedov@protonmail.com>
  * @brief REPL shell for brainfuck.
- * @date 2022-03-25
+ * @date 2022-03-29
  * 
  * @copyright Copyright (c) 2022
  * 
  */
 #include "shell.hpp"
 
+#define LIB_READLINE
+
 #include <iostream>
 #include <sstream>
 #include <string>
+#ifdef LIB_READLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
 
 #include "bf.hpp"
 
@@ -22,8 +28,8 @@
 
 static int newlines = 0;
 
-int shell_cmd(std::string input);
-void shell_help();
+int command(std::string input);
+void help();
 
 void shell(int nl) {
 	newlines = nl;
@@ -31,11 +37,18 @@ void shell(int nl) {
 	// Enter REPL loop
 	std::string input;
 	while (1) {
+		#ifdef LIB_READLINE
+		char *line = readline(SHELL_PS1);
+		add_history(line);
+		input.assign(line);
+		std::free(line);
+		#else
 		std::cout << SHELL_PS1;
 		std::cin >> input;
+		#endif
 
 		if (input[0] == SHELL_CMD_PREFIX) {
-			if (shell_cmd(input.substr(1)) == 1) return;
+			command(input.substr(1));
 			continue;
 		}
 
@@ -53,16 +66,17 @@ void shell(int nl) {
  * @param input string of commands
  * @return 1 if quit is inputted or 0 otherwise
  */
-int shell_cmd(std::string input) {
+int command(std::string input) {
 	std::istringstream in_str(input);
 	char cmd;
 
 	while (in_str >> cmd) {
 		switch (cmd) {
 			case 'q':
-				return 1;
+				exit(0);
+				break;
 			case 'h':
-				shell_help();
+				help();
 				break;
 			case 'l':
 				std::cout << bf_ptr() << std::endl;
@@ -112,7 +126,7 @@ int shell_cmd(std::string input) {
  * @brief Print shell help information.
  * 
  */
-void shell_help() {
+void help() {
 	std::cout << "Interactive/REPL shell:" << std::endl;
 	std::cout << "  Evaluates brainfuck code" << std::endl;
 	std::cout << "  Start input with '$' to input non-brainfuck commands" << std::endl << std::endl;

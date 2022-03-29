@@ -1,9 +1,9 @@
 /**
  * @file main.cpp
  * @author Vladyslav Aviedov (vladaviedov@protonmail.com)
- * @brief Entry point for bfi.
- * @version 0.5.0
- * @date 2022-03-25
+ * @brief Brainfuck interpreter and shell written in C++.
+ * @version 0.6.0
+ * @date 2022-03-29
  * 
  * @copyright Copyright (c) 2022
  * 
@@ -22,7 +22,7 @@
 #include "bf.hpp"
 #include "shell.hpp"
 
-#define VERSION "0.5.0"
+#define VERSION "0.6.0"
 #define MEM_DEFAULT 30000
 
 static int newline = 0;
