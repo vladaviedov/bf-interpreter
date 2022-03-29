@@ -25,16 +25,6 @@
 #define VERSION "0.5.0"
 #define MEM_DEFAULT 30000
 
-// brainfuck commands
-#define PTR_INC '>'
-#define PTR_DEC '<'
-#define MEM_INC '+'
-#define MEM_DEC '-'
-#define PUT_CHR '.'
-#define GET_CHR ','
-#define JMP_FWD '['
-#define JMP_BCK ']'
-
 static int newline = 0;
 static int interactive = 0;
 
